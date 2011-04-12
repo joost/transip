@@ -1,0 +1,39 @@
+= TransIP API
+
+Ruby lib to use the full TransIP API (v2).
+
+For more info see:
+
+* <b>The origin of this code:</b> https://github.com/joost/transip-api
+* <b>TransIP API Docs:</b> https://www.transip.nl/g/api/
+
+Credits:
+
+* <b>Savon Gem:</b> See: http://savonrb.com/. Wouldn't be so simple without it!
+
+== Install
+
+Have to turn into a gem..
+Download / clone the repository. Bundle install the needed gems and require the lib.
+
+  git clone git://github.com/joost/transip-api.git
+  bundle install
+  irb # and require './transip'
+
+== Usage
+
+For the most up-to-date documentation see the source files. Use as follows:
+
+  transip = Transip.new('username', '12.34.12.3')
+  transip.generate_hash('your_api_password')
+  transip.actions # => [:check_availability, .., :set_contacts]
+  transip.request(:get_domain_names)
+  transip.request(:get_info, :domain_name => 'domain.com')
+
+== TODO
+
+* Turn into gem
+
+Please feel free to contribute and send me a pull request via Github!
+
+Copyright (c) 2011 Joost Hietbrink, released under the MIT license
