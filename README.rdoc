@@ -5,11 +5,11 @@ Ruby lib to use the full TransIP API (v2).
 For more info see:
 
 * <b>The origin of this code:</b> https://github.com/joost/transip-api
-* <b>TransIP API Docs:</b> https://www.transip.nl/g/api/
+* <b>TransIP API Docs:</b> https://www.transip.nl/g/api
 
 Credits:
 
-* <b>Savon Gem:</b> See: http://savonrb.com/. Wouldn't be so simple without it!
+* <b>Savon Gem:</b> See: http://savonrb.com. Wouldn't be so simple without it!
 
 == Install
 
