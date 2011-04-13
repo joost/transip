@@ -1,6 +1,6 @@
 = TransIP API
 
-Ruby lib to use the full TransIP API (v2).
+Ruby gem to use the full TransIP API (v2).
 
 For more info see:
 
@@ -13,8 +13,11 @@ Credits:
 
 == Install
 
-Have to turn into a gem..
-Download / clone the repository. Bundle install the needed gems and require the lib.
+Use the gem.
+
+  gem install transip
+
+For the latest version: Download / clone the repository. Bundle install the needed gems and require the lib.
 
   git clone git://github.com/joost/transip-api.git
   bundle install
@@ -24,6 +27,7 @@ Download / clone the repository. Bundle install the needed gems and require the 
 
 For the most up-to-date documentation see the source files. Use as follows:
 
+  require 'transip'
   transip = Transip.new('username', '12.34.12.3')
   transip.generate_hash('your_api_password')
   transip.actions # => [:check_availability, .., :set_contacts]
@@ -32,7 +36,7 @@ For the most up-to-date documentation see the source files. Use as follows:
 
 == TODO
 
-* Turn into gem
+* Tests
 
 Please feel free to contribute and send me a pull request via Github!
 
