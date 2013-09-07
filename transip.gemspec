@@ -8,8 +8,10 @@ Gem::Specification.new do |s|
   s.authors = ["Joost Hietbrink"]
   s.date = %q{2011-03-13}
   s.description = s.summary = %q{Ruby gem to use the full TransIP API (v2).}
-  s.add_dependency('savon', '>= 0.9.1')
-  s.add_dependency('curb', '>= 0.7.15')
+  s.add_dependency('savon', '>= 2.3.0')
+  s.add_dependency('curb', '>= 0.8.4')
+  s.add_dependency('facets', '>= 2.9.3')
+  
   s.email = %q{joost@joopp.com}
   s.extra_rdoc_files = [
     "MIT-LICENSE",

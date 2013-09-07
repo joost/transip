@@ -1,11 +1,13 @@
 require "rubygems"
 require "bundler/setup"
-
+require 'securerandom'
 require 'savon'
 require 'curb'
-require 'digest/md5'
+require 'facets'
+require 'digest/sha2'
+require 'base64'
 #
-# Implements the www.transip.nl API (v2). For more info see: https://www.transip.nl/g/api/
+# Implements the www.transip.nl API (v4.2). For more info see: https://www.transip.nl/g/api/
 #
 # Usage:
 #  transip = Transip.new(:username => 'api_username') # will try to determine IP (will not work behind NAT) and uses readonly mode
@@ -20,15 +22,15 @@ require 'digest/md5'
 #  transip.request(:register, Transip::Domain.new('newdomain.com', nil, nil, [Transip::DnsEntry.new('test', 5.minutes, 'A', '74.125.77.147')]))
 #
 # Some other methods:
-#  transip.generate_hash # Use this to generate a authentication hash
 #  transip.hash = 'your_hash' # Or use this to directly set the hash (so you don't have to use your password in your code)
 #  transip.client! # This returns a new Savon::Client. It is cached in transip.client so when you update your username, password or hash call this method!
 #
 # Credits:
 #  Savon Gem - See: http://savonrb.com/. Wouldn't be so simple without it!
 class Transip
-
+  SERVICE = 'DomainService'
   WSDL = 'https://api.transip.nl/wsdl/?service=DomainService'
+  API_VERSION = '4.2'
 
   attr_accessor :username, :password, :ip, :mode, :hash
   attr_reader :response
@@ -147,15 +149,18 @@ class Transip
   #  transip = Transip.new(:username => 'api_username') # will try to determine IP (will not work behind NAT) and uses readonly mode
   #  transip = Transip.new(:username => 'api_username', :ip => '12.34.12.3', :mode => 'readwrite') # use this in production
   def initialize(options = {})
+    @key = options[:key]
     @username = options[:username]
-    raise ArgumentError, "The :username options is required!" if @username.nil?
+    raise ArgumentError, "The :username and :key options are required!" if @username.nil? or @key.nil?
     @ip = options[:ip] || self.class.local_ip
     @mode = options[:mode] || :readonly
+    @endpoint = options[:endpoint] || 'api.transip.nl'
     if options[:password]
       @password = options[:password]
-      self.generate_hash
     end
-
+    @savon_options = {
+      :wsdl => WSDL,
+    }
     # By default we don't want to debug!
     self.turn_off_debugging!
   end
@@ -163,59 +168,90 @@ class Transip
   # By default we don't want to debug!
   # Changing might impact other Savon usages.
   def turn_off_debugging!
-    Savon.configure do |config|
-      config.log = false            # disable logging
-      config.log_level = :info      # changing the log level
-    end
+      @savon_options[:log] = false            # disable logging
+      @savon_options[:log_level] = :info      # changing the log level
   end
 
-  # Make Savon log. 
-  # Changing might impact other Savon usages.
-  def turn_on_debugging!
-    Savon.configure do |config|
-      config.log = true
-      config.log_level = :debug
-    end
-  end
 
   # Make Savon log to Rails.logger and turn_off_debugging!
   def use_with_rails!
-    Savon.configure do |config|
-      if Rails.env.production?
-        self.turn_off_debugging!
-      # else
-      #   self.turn_on_debugging!
-      end
-      config.logger = Rails.logger  # using the Rails logger
+    if Rails.env.production?
+      self.turn_off_debugging!
+    end
+    @savon_options[:logger] = Rails.logger  # using the Rails logger
+  end
+
+  # yes, i know, it smells bad
+  def convert_array_to_hash(array)
+    result = {}
+    array.each_with_index do |value, index|
+      result[index] = value
+    end
+    result
+  end
+
+  # does all the techy stuff to calculate transip's sick authentication scheme:
+  # a hash with all the request information is subsequently:
+  # URL encoded
+  # SHA512 digested
+  # asn1 header added
+  # private key encrypted
+  # Base64 encoded
+  # URL encoded
+  # I think the guys at transip were trying to use their entire crypto-toolbox!
+  def signature(method, parameters, time, nonce)
+    formatted_method = method.to_s.lower_camelcase
+    parameters ||= {} 
+    input = convert_array_to_hash(parameters.values)
+    options = {
+      '__method' => formatted_method,
+      '__service' => SERVICE,
+      '__hostname' => @endpoint,
+      '__timestamp' => time,
+      '__nonce' => nonce
+  
+    }
+    input.merge!(options)
+    puts input.inspect
+    raise "Invalid RSA key" unless @key =~ /-----BEGIN RSA PRIVATE KEY-----(.*)-----END RSA PRIVATE KEY-----/sim
+    encoded_input = URI.encode_www_form(input)
+    digest = Digest::SHA512.new.digest(encoded_input)
+    asn_header = "\x30\x51\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x03\x05\x00\x04\x40"
+    asn = asn_header + digest
+    
+    private_key = OpenSSL::PKey::RSA.new(@key)
+    encrypted_asn = private_key.private_encrypt(asn)
+    readable_encrypted_asn = Base64.encode64(encrypted_asn)
+    URI.encode_www_form_component(readable_encrypted_asn)
+  end
+
+  def to_cookies(content)
+    content.map do |item|
+      HTTPI::Cookie.new item
     end
   end
 
-  # Generates the needed authentication hash.
-  # 
-  # NOTE: The password is NOT your general TransIP password
-  # but one specially for the API. Configure it in the Control
-  # Panel.
-  def generate_hash
-    raise StandardError, "Need username and password to (re)generate the authentication hash." if self.username.nil? || self.password.nil?
-    digest_string = "#{self.username}:#{self.password}@#{self.ip}"
-    digest = Digest::MD5.hexdigest(digest_string)
-    self.hash = digest
-  end
+  # Used for authentication
+  def cookies(method, parameters)
+    time = Time.new.to_i
+    #strip out the -'s because transip requires the nonce to be between 6 and 32 chars
+    nonce = SecureRandom.uuid.gsub("-", '')
+    to_cookies [ "login=#{self.username}",
+                 "mode=#{self.mode}",
+                 "timestamp=#{time}",
+                 "nonce=#{nonce}",
+                 "clientVersion=#{API_VERSION}",
+                 "signature=#{signature(method, parameters, time, nonce)}"
 
-  # Used as authentication
-  def cookie
-    raise StandardError, "Don't have an authentication hash yet. Please set a hash using generate_hash or hash= method." if hash.blank?
-    "login=#{self.username}; hash=#{self.hash}; mode=#{self.mode}; "
+               ]
+
   end
 
   # Same as client method but initializes a brand new fresh client.
   # You have to use this one when you want to re-set the mode (readwrite, readonly),
   # or authentication details of your client.
   def client!
-    @client = Savon::Client.new do
-      wsdl.document = WSDL
-    end
-    @client.http.headers["Cookie"] = cookie
+    @client = Savon::Client.new(@savon_options) 
     return @client
   end
 
@@ -237,24 +273,27 @@ class Transip
   # For more info see the Transip API docs.
   # Be sure to rescue all the errors.. since it is hardcore error throwing.
   def request(action, options = nil)
-    if options.nil?
-      @response = client.request(action)
-    elsif options.is_a?(Hash)
-      @response = client.request(action) do 
-        soap.body = options
-      end
-    elsif options.class < Transip::TransipStruct
-      # If we call request(:register, Transip::Domain.new('newdomain.com')) we turn the Transip::Domain into a Hash.
-      @response = client.request(action) do 
-        soap.body = options.to_hash
-      end
+    formatted_action = action.to_s.lower_camelcase
+    parameters = {
+      # for some reason, the transip server wants the body root tag to be
+      # the name of the action.
+      :message_tag => formatted_action
+    }
+    if options.is_a? Transip::TransipStruct
+      options = options.to_hash 
+    elsif options.is_a? Hash
+      options = options
+    elsif options.nil?
+      #no work here!
     else
-      raise ArgumentError, "Expected options to be nil or a Hash!"
+      raise "Invalid parameter format (should be nil, hash or TransipStruct"
     end
+    parameters[:message] = options
+    parameters[:cookies] = cookies(action, options)
+    @response = client.call(action, parameters)
     @response.to_hash
-  rescue Savon::SOAP::Fault => e
+  rescue Savon::SOAPFault => e
     raise ApiError.new(e), e.message.sub(/^\(\d+\)\s+/,'') # We raise our own error (FIXME: Correct?).
-    # TODO: Curl::Err::HostResolutionError, Couldn't resolve host name
   end
 
   # This is voodoo. Use it only if you know voodoo kung-fu.
@@ -269,7 +308,6 @@ class Transip
     if e.ip4_authentication_error?
       if !(@ip == e.error_msg_ip) # If not the same IP we try it with this IP..
         self.ip = e.error_msg_ip
-        self.generate_hash # Generate a new authentication hash.
         self.client! # Update the client with the new authentication hash in the cookie!
         return self.request(*args)
       end
