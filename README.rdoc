@@ -1,25 +1,21 @@
 = TransIP API
 
-Ruby gem to use the full TransIP API (v2).
+Ruby gem to use the full TransIP API (v4.2). This fork uses an updated version of savon, and implements the new request signing method that the guys at TransIP have introduced into their api. So far, i have only tested the :get_domain_names, :get_info and :set_dns_entries calls.
 
 For more info see:
 
 * <b>The origin of this code:</b> https://github.com/joost/transip-api
 * <b>TransIP API Docs:</b> https://www.transip.nl/g/api
 
-Credits:
-
-* <b>Savon Gem:</b> See: http://savonrb.com. Wouldn't be so simple without it!
-
 == Install
 
 Use the gem.
 
-  gem install transip
+  gem install transip --source http://github.com/richmans/transip-api
 
 For the latest version: Download / clone the repository. Bundle install the needed gems and require the lib.
 
-  git clone git://github.com/joost/transip-api.git
+  git clone git://github.com/richmans/transip-api.git
   bundle install
   irb # and require './transip'
 
@@ -39,10 +35,6 @@ For the most up-to-date documentation see the source files. Use as follows:
   transip.request(:set_dns_entries, :domain_name => 'bdgg.nl', :dns_entries => [Transip::DnsEntry.new('test', 5.minutes, 'A', '74.125.77.147')])
   transip.request(:register, Transip::Domain.new('newdomain.com', nil, nil, [Transip::DnsEntry.new('test', 5.minutes, 'A', '74.125.77.147')]))
 
-== TODO
-
-* Tests
-
 Please feel free to contribute and send me a pull request via Github!
 
-Copyright (c) 2011 Joost Hietbrink, released under the MIT license
+Copyright (c) 2013 Richard Bronkhorst, released under the MIT license

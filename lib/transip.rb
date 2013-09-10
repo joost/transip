@@ -311,6 +311,7 @@ class Transip
     client.wsdl.soap_actions
   end
 
+  # This makes sure that arrays are properly encoded as soap-arrays by Gyoku
   def fix_array_definitions(options)
     result = {}
     options.each do |key, value|
