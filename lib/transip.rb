@@ -6,7 +6,6 @@ require 'curb'
 require 'facets'
 require 'digest/sha2'
 require 'base64'
-
 #
 # Implements the www.transip.nl API (v4.2). For more info see: https://www.transip.nl/g/api/
 #
@@ -89,6 +88,14 @@ class Transip
       { self.class_name_to_sym => self.members_to_hash }
     end
 
+    def self.from_hash(hash)
+      result = new
+      hash.each do |key, value|
+        next if key[0] == '@'
+        result.send(:"#{key}=", value)
+      end
+      result
+    end
   end
 
   # name - String (Eg. '@' or 'www')
@@ -277,7 +284,7 @@ class Transip
                  "signature=#{signature(method, parameters, time, nonce)}"
 
                ]
-    puts signature(method, parameters, time, nonce)
+    #puts signature(method, parameters, time, nonce)
     result
   end
 
@@ -334,20 +341,18 @@ class Transip
       # the name of the action.
       :message_tag => formatted_action
     }
-    if options.is_a? Transip::TransipStruct
-      options = options.to_hash 
-    end
-
+    options = options.to_hash  if options.is_a? Transip::TransipStruct
+      
     if options.is_a? Hash
-      options = fix_array_definitions(options)
+      xml_options = fix_array_definitions(options)
     elsif options.nil?
-      #no work here!
+      xml_options = nil
     else
       raise "Invalid parameter format (should be nil, hash or TransipStruct"
     end
-    parameters[:message] = options
+    parameters[:message] = xml_options
     parameters[:cookies] = cookies(action, options)
-    puts parameters.inspect
+    #puts parameters.inspect
     @response = client.call(action, parameters) 
     @response.to_hash
   rescue Savon::SOAPFault => e
