@@ -22,7 +22,6 @@ Gem::Specification.new do |s|
      "VERSION.yml",
      "Gemfile",
      "Gemfile.lock",
-     "init.rb",
      "lib/transip.rb"
   ]
   s.homepage = %q{http://github.com/richmans/transip-api}
