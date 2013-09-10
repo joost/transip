@@ -6,6 +6,7 @@ require 'curb'
 require 'facets'
 require 'digest/sha2'
 require 'base64'
+
 #
 # Implements the www.transip.nl API (v4.2). For more info see: https://www.transip.nl/g/api/
 #
@@ -76,7 +77,7 @@ class Transip
     # Gyoku.xml (see: https://github.com/rubiii/gyoku) is used by Savon.
     # It calls to_s on unknown Objects. We use it to convert 
     def to_s
-      Gyoku.xml(self.to_hash)
+      Gyoku.xml(self.members_to_hash)
     end
 
     # See what happens here: http://snippets.dzone.com/posts/show/302
@@ -159,7 +160,7 @@ class Transip
       @password = options[:password]
     end
     @savon_options = {
-      :wsdl => WSDL,
+      :wsdl => WSDL
     }
     # By default we don't want to debug!
     self.turn_off_debugging!
@@ -190,9 +191,41 @@ class Transip
     result
   end
 
+  def urlencode(input)
+    output = URI.encode_www_form_component(input)
+    output.gsub!('+', '%20')
+    output.gsub!('%7E', '~')
+    output
+  end
+
+  def serialize_parameters(parameters, key_prefix=nil)
+    parameters = parameters.to_hash.values.first if parameters.is_a? TransipStruct
+    parameters = convert_array_to_hash(parameters) if parameters.is_a? Array
+    if not parameters.is_a? Hash
+      return urlencode(parameters)
+    end
+
+    encoded_parameters = []
+    parameters.each do |key, value|
+      next if key.to_s == '@xsi:type'
+      encoded_key = (key_prefix.nil?) ? urlencode(key) : "#{key_prefix}[#{urlencode(key)}]"
+      if value.is_a? Hash or value.is_a? Array or value.is_a? TransipStruct
+        encoded_parameters << serialize_parameters(value, encoded_key)
+      else
+        encoded_value = urlencode(value)
+        encoded_parameters << "#{encoded_key}=#{encoded_value}"
+      end
+    end
+    
+    encoded_parameters = encoded_parameters.join("&")
+    #puts encoded_parameters.split('&').join("\n")
+    encoded_parameters
+  end
+
+
   # does all the techy stuff to calculate transip's sick authentication scheme:
   # a hash with all the request information is subsequently:
-  # URL encoded
+  # serialized like a www form
   # SHA512 digested
   # asn1 header added
   # private key encrypted
@@ -212,17 +245,16 @@ class Transip
   
     }
     input.merge!(options)
-    puts input.inspect
     raise "Invalid RSA key" unless @key =~ /-----BEGIN RSA PRIVATE KEY-----(.*)-----END RSA PRIVATE KEY-----/sim
-    encoded_input = URI.encode_www_form(input)
-    digest = Digest::SHA512.new.digest(encoded_input)
+    serialized_input = serialize_parameters(input)
+    
+    digest = Digest::SHA512.new.digest(serialized_input)
     asn_header = "\x30\x51\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x03\x05\x00\x04\x40"
     asn = asn_header + digest
-    
     private_key = OpenSSL::PKey::RSA.new(@key)
     encrypted_asn = private_key.private_encrypt(asn)
     readable_encrypted_asn = Base64.encode64(encrypted_asn)
-    URI.encode_www_form_component(readable_encrypted_asn)
+    urlencode(readable_encrypted_asn)
   end
 
   def to_cookies(content)
@@ -231,12 +263,13 @@ class Transip
     end
   end
 
+
   # Used for authentication
   def cookies(method, parameters)
     time = Time.new.to_i
     #strip out the -'s because transip requires the nonce to be between 6 and 32 chars
     nonce = SecureRandom.uuid.gsub("-", '')
-    to_cookies [ "login=#{self.username}",
+    result = to_cookies [ "login=#{self.username}",
                  "mode=#{self.mode}",
                  "timestamp=#{time}",
                  "nonce=#{nonce}",
@@ -244,14 +277,19 @@ class Transip
                  "signature=#{signature(method, parameters, time, nonce)}"
 
                ]
-
+    puts signature(method, parameters, time, nonce)
+    result
   end
 
   # Same as client method but initializes a brand new fresh client.
   # You have to use this one when you want to re-set the mode (readwrite, readonly),
   # or authentication details of your client.
   def client!
-    @client = Savon::Client.new(@savon_options) 
+    @client = Savon::Client.new(@savon_options) do 
+      namespaces(
+        "xmlns:enc" => "http://schemas.xmlsoap.org/soap/encoding/"
+      )
+    end
     return @client
   end
 
@@ -264,6 +302,23 @@ class Transip
   # Returns Array with all possible SOAP WSDL actions.
   def actions
     client.wsdl.soap_actions
+  end
+
+  def fix_array_definitions(options)
+    result = {}
+    options.each do |key, value|
+      if value.is_a? Array and value.size > 0
+        entry_name = value.first.class.name.split(":").last
+        result[key] = {
+          'item' => {:content! => value, :'@xsi:type' => "tns:#{entry_name}"}, 
+          :'@xsi:type' => "tns:ArrayOf#{entry_name}",
+          :'@enc:arrayType' => "tns:#{entry_name}[#{value.size}]"
+        }
+      else
+        result[key] = value
+      end
+    end
+    result
   end
 
   # Returns the response.to_hash (raw Savon::SOAP::Response is also stored in @response).
@@ -281,8 +336,10 @@ class Transip
     }
     if options.is_a? Transip::TransipStruct
       options = options.to_hash 
-    elsif options.is_a? Hash
-      options = options
+    end
+
+    if options.is_a? Hash
+      options = fix_array_definitions(options)
     elsif options.nil?
       #no work here!
     else
@@ -290,7 +347,8 @@ class Transip
     end
     parameters[:message] = options
     parameters[:cookies] = cookies(action, options)
-    @response = client.call(action, parameters)
+    puts parameters.inspect
+    @response = client.call(action, parameters) 
     @response.to_hash
   rescue Savon::SOAPFault => e
     raise ApiError.new(e), e.message.sub(/^\(\d+\)\s+/,'') # We raise our own error (FIXME: Correct?).
