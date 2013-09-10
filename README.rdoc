@@ -2,6 +2,11 @@
 
 Ruby gem to use the full TransIP API (v4.2). This fork uses an updated version of savon, and implements the new request signing method that the guys at TransIP have introduced into their api. So far, i have only tested the :get_domain_names, :get_info and :set_dns_entries calls.
 
+
+The transip API makes use of public/private key encryption. You need to use the TransIP
+control panel to give your server access to the api, and to generate a key. You can then
+use the key together with your username to gain access to the api
+
 For more info see:
 
 * <b>The origin of this code:</b> https://github.com/joost/transip-api
@@ -9,23 +14,20 @@ For more info see:
 
 == Install
 
-Use the gem.
-
-  gem install transip --source http://github.com/richmans/transip-api
-
 For the latest version: Download / clone the repository. Bundle install the needed gems and require the lib.
 
-  git clone git://github.com/richmans/transip-api.git
+  git clone git://github.com/richmans/transip.git
+  cd transip
   bundle install
-  irb # and require './transip'
+  irb # and require './lib/transip'
 
 == Usage
 
 For the most up-to-date documentation see the source files. Use as follows:
 
   require 'transip'
-  transip = Transip.new(:username => 'api_username') # will try to determine IP (will not work behind NAT) and uses readonly mode
-  transip = Transip.new(:username => 'api_username', :ip => '12.34.12.3', :mode => 'readwrite') # use this in production
+  transip = Transip.new(:username => 'api_username', :key => private_key) # will try to determine IP (will not work behind NAT) and uses readonly mode
+  transip = Transip.new(:username => 'api_username', :key => private_key, :ip => '12.34.12.3', :mode => 'readwrite') # use this in production
   transip.actions # => [:check_availability, :get_whois, :get_domain_names, :get_info, :get_auth_code, :get_is_locked, :register, :cancel, :transfer_with_owner_change, :transfer_without_owner_change, :set_nameservers, :set_lock, :unset_lock, :set_dns_entries, :set_owner, :set_contacts]
   transip.request(:get_domain_names)
   transip.request(:get_info, :domain_name => 'yelloyello.be')

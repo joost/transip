@@ -9,9 +9,12 @@ require 'base64'
 #
 # Implements the www.transip.nl API (v4.2). For more info see: https://www.transip.nl/g/api/
 #
+# The transip API makes use of public/private key encryption. You need to use the TransIP
+# control panel to give your server access to the api, and to generate a key. You can then
+# use the key together with your username to gain access to the api
 # Usage:
-#  transip = Transip.new(:username => 'api_username') # will try to determine IP (will not work behind NAT) and uses readonly mode
-#  transip = Transip.new(:username => 'api_username', :ip => '12.34.12.3', :mode => 'readwrite') # use this in production
+#  transip = Transip.new(:username => 'api_username', :key => private_key) # will try to determine IP (will not work behind NAT) and uses readonly mode
+#  transip = Transip.new(:username => 'api_username', :key => private_key, :ip => '12.34.12.3', :mode => 'readwrite') # use this in production
 #  transip.actions # => [:check_availability, :get_whois, :get_domain_names, :get_info, :get_auth_code, :get_is_locked, :register, :cancel, :transfer_with_owner_change, :transfer_without_owner_change, :set_nameservers, :set_lock, :unset_lock, :set_dns_entries, :set_owner, :set_contacts]
 #  transip.request(:get_domain_names)
 #  transip.request(:get_info, :domain_name => 'yelloyello.be')
