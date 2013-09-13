@@ -60,7 +60,6 @@ class Transip
 
     # See what happens here: http://snippets.dzone.com/posts/show/302
     def members_to_hash
-      puts members.collect {|m| [m, self.send(m)]}.flatten.inspect
       Hash[*members.collect {|m| [m, self.send(m)]}.flatten]
     end
 
@@ -370,12 +369,9 @@ class Transip
     
   end
 
-  # Returns the response object(s)
-  # Examples:
-  #  hash_response = transip.request(:get_domain_names)
-  #  hash_response[:get_domain_names_response][:return][:item] # => ["your.domain", "names.list"]
-  # For more info see the Transip API docs.
-  # Be sure to rescue all the errors.. since it is hardcore error throwing.
+  # This is the main request function
+  # throws ApiError
+  # returns response object (can be TransipStruct or Array of TransipStruct)
   def request(action, options = nil)
     formatted_action = action.to_s.lower_camelcase
     parameters = {
