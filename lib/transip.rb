@@ -60,6 +60,7 @@ class Transip
 
     # See what happens here: http://snippets.dzone.com/posts/show/302
     def members_to_hash
+      puts members.collect {|m| [m, self.send(m)]}.flatten.inspect
       Hash[*members.collect {|m| [m, self.send(m)]}.flatten]
     end
 
@@ -159,22 +160,31 @@ class Transip
   # contacts - Array of Transip::WhoisContact
   # dns_entries - Array of Transip::DnsEntry
   # branding - Transip::DomainBranding
-  # auth_code
-  # is_locked
-  # registration_date
-  # renewal_date 
+  # auth_code - String
+  # is_locked - boolean
+  # registration_date - DateTime
+  # renewal_date - DateTime
   class Domain < TransipStruct.new(:name, :nameservers, :contacts, :dns_entries, :branding, :auth_code, :is_locked, :registration_date, :renewal_date)
+  end
+
+
+  # name - String
+  # price - number
+  # renewal_price - number
+  # capabilities - Array of strings
+  # registration_period_length - number
+  # cancel_time_frame - number
+  class Tld < TransipStruct.new(:name, :price, :renewal_price, :capabilities, :registration_period_length, :cancel_time_frame)
   end
 
   # Options:
   # * username 
   # * ip
-  # * password
+  # * key
   # * mode
   #
   # Example:
-  #  transip = Transip.new(:username => 'api_username') # will try to determine IP (will not work behind NAT) and uses readonly mode
-  #  transip = Transip.new(:username => 'api_username', :ip => '12.34.12.3', :mode => 'readwrite') # use this in production
+  #  transip = Transip.new(:username => 'api_username', :ip => '12.34.12.3', :key => mykey, :mode => 'readwrite') # use this in production
   def initialize(options = {})
     @key = options[:key]
     @username = options[:username]
