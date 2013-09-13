@@ -6,6 +6,7 @@ require 'curb'
 require 'facets'
 require 'digest/sha2'
 require 'base64'
+require 'ipaddr'
 #
 # Implements the www.transip.nl API (v4.2). For more info see: https://www.transip.nl/g/api/
 #
@@ -13,23 +14,14 @@ require 'base64'
 # control panel to give your server access to the api, and to generate a key. You can then
 # use the key together with your username to gain access to the api
 # Usage:
-#  transip = Transip.new(:username => 'api_username', :key => private_key) # will try to determine IP (will not work behind NAT) and uses readonly mode
 #  transip = Transip.new(:username => 'api_username', :key => private_key, :ip => '12.34.12.3', :mode => 'readwrite') # use this in production
 #  transip.actions # => [:check_availability, :get_whois, :get_domain_names, :get_info, :get_auth_code, :get_is_locked, :register, :cancel, :transfer_with_owner_change, :transfer_without_owner_change, :set_nameservers, :set_lock, :unset_lock, :set_dns_entries, :set_owner, :set_contacts]
 #  transip.request(:get_domain_names)
-#  transip.request(:get_info, :domain_name => 'yelloyello.be')
-#  transip.request_with_ip4_fix(:check_availability, :domain_name => 'yelloyello.be')
-#  transip.request_with_ip4_fix(:get_info, :domain_name => 'one_of_your_domains.com')
-#  transip.request(:get_whois, :domain_name => 'google.com')
-#  transip.request(:set_dns_entries, :domain_name => 'bdgg.nl', :dns_entries => [Transip::DnsEntry.new('test', 5.minutes, 'A', '74.125.77.147')])
-#  transip.request(:register, Transip::Domain.new('newdomain.com', nil, nil, [Transip::DnsEntry.new('test', 5.minutes, 'A', '74.125.77.147')]))
+#  transip.request(:get_info, :domain_name => 'example.com')
+#  transip.request(:get_whois, :domain_name => 'example.com')
+#  transip.request(:set_dns_entries, :domain_name => 'example.com', :dns_entries => [Transip::DnsEntry.new('test', 5.minutes, 'A', '74.125.77.147')])
+#  transip.request(:register, Transip::Domain.new('example.com', nil, nil, [Transip::DnsEntry.new('test', 5.minutes, 'A', '74.125.77.147')]))
 #
-# Some other methods:
-#  transip.hash = 'your_hash' # Or use this to directly set the hash (so you don't have to use your password in your code)
-#  transip.client! # This returns a new Savon::Client. It is cached in transip.client so when you update your username, password or hash call this method!
-#
-# Credits:
-#  Savon Gem - See: http://savonrb.com/. Wouldn't be so simple without it!
 class Transip
   SERVICE = 'DomainService'
   WSDL = 'https://api.transip.nl/wsdl/?service=DomainService'
@@ -40,22 +32,6 @@ class Transip
 
   # Following Error needs to be catched in your code!
   class ApiError < RuntimeError
-
-    IP4_REGEXP = /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/
-
-    # Returns true if we have a authentication error and gets ip from error msg.
-    # "Wrong API credentials (bad hash); called from IP 213.86.41.114"
-    def ip4_authentication_error?
-      self.message.to_s =~ /called from IP\s(#{IP4_REGEXP})/ # "Wrong API credentials (bad hash); called from IP 213.86.41.114"
-      @error_msg_ip = $1
-      !@error_msg_ip.nil?
-    end
-
-    # Returns the ip coming from the error msg.
-    def error_msg_ip
-      @error_msg_ip || ip4_authentication_error? && @error_msg_ip
-    end
-
   end
 
   # Following subclasses are actually not needed (as you can also
@@ -91,11 +67,47 @@ class Transip
       { self.class_name_to_sym => self.members_to_hash }
     end
 
+    def self.get_type(hash)
+      type = hash[:'@xsi:type'].split(":").last
+      raise "No type definition found in hash" if type.nil?
+      klass = Transip.const_get(type) rescue nil
+      raise "Invalid transipStruct #{type}" unless klass < TransipStruct
+      klass
+    end
+
     def self.from_hash(hash)
-      result = new
+      begin
+        result = get_type(hash).new
+      rescue
+        return hash
+      end
       hash.each do |key, value|
         next if key[0] == '@'
-        result.send(:"#{key}=", value)
+        result.send(:"#{key}=", from_soap(value))
+      end
+      result
+    end
+
+    def self.from_soap(input)
+      if input.is_a? Array
+        result = input.map {|value| from_soap(value)}
+      elsif input.is_a? Hash
+        
+        if input.keys.first == :item
+          result = from_soap(input[:item])
+        elsif input[:'@xsi:type'] == 'xsd:string'
+          result = ''
+        else
+          result = TransipStruct.from_hash(input)
+        end
+        # this is not a transip struct
+        if result.is_a? Hash
+          result.each do |key, value|
+            result[key] = from_soap(value)
+          end
+        end        
+      else
+        result = input
       end
       result
     end
@@ -111,7 +123,7 @@ class Transip
   # hostname - string
   # ipv4 - string
   # ipv6 - string (optional)
-  class Nameserver < TransipStruct.new(:name, :ipv4, :ipv6)
+  class Nameserver < TransipStruct.new(:hostname, :ipv4, :ipv6)
   end
 
   # type - string
@@ -147,7 +159,11 @@ class Transip
   # contacts - Array of Transip::WhoisContact
   # dns_entries - Array of Transip::DnsEntry
   # branding - Transip::DomainBranding
-  class Domain < TransipStruct.new(:name, :nameservers, :contacts, :dns_entries, :branding)
+  # auth_code
+  # is_locked
+  # registration_date
+  # renewal_date 
+  class Domain < TransipStruct.new(:name, :nameservers, :contacts, :dns_entries, :branding, :auth_code, :is_locked, :registration_date, :renewal_date)
   end
 
   # Options:
@@ -162,8 +178,9 @@ class Transip
   def initialize(options = {})
     @key = options[:key]
     @username = options[:username]
-    raise ArgumentError, "The :username and :key options are required!" if @username.nil? or @key.nil?
-    @ip = options[:ip] || self.class.local_ip
+    @ip = options[:ip] 
+    raise ArgumentError, "The :username, :ip and :key options are required!" if @username.nil? or @key.nil?
+    
     @mode = options[:mode] || :readonly
     @endpoint = options[:endpoint] || 'api.transip.nl'
     if options[:password]
@@ -332,7 +349,18 @@ class Transip
     result
   end
 
-  # Returns the response.to_hash (raw Savon::SOAP::Response is also stored in @response).
+
+  # converts the savon response object to something we can return to the caller
+  # - A TransipStruct object
+  # - An array of TransipStructs
+  # - nil
+  def process_response(response)
+    response = response.to_hash.values.first[:return] rescue nil
+    TransipStruct.from_soap(response)
+    
+  end
+
+  # Returns the response object(s)
   # Examples:
   #  hash_response = transip.request(:get_domain_names)
   #  hash_response[:get_domain_names_response][:return][:item] # => ["your.domain", "names.list"]
@@ -357,43 +385,10 @@ class Transip
     parameters[:message] = xml_options
     parameters[:cookies] = cookies(action, options)
     #puts parameters.inspect
-    @response = client.call(action, parameters) 
-    @response.to_hash
+    response = client.call(action, parameters) 
+    
+    process_response(response)
   rescue Savon::SOAPFault => e
     raise ApiError.new(e), e.message.sub(/^\(\d+\)\s+/,'') # We raise our own error (FIXME: Correct?).
   end
-
-  # This is voodoo. Use it only if you know voodoo kung-fu.
-  #
-  # The method fixes the ip that is set. It uses the error from
-  # Transip to set the ip and re-request an authentication hash.
-  #
-  # It only works if you set password (via the password= method)!
-  def request_with_ip4_fix(*args)
-    self.request(*args)
-  rescue ApiError => e
-    if e.ip4_authentication_error?
-      if !(@ip == e.error_msg_ip) # If not the same IP we try it with this IP..
-        self.ip = e.error_msg_ip
-        self.client! # Update the client with the new authentication hash in the cookie!
-        return self.request(*args)
-      end
-    end
-    raise # If we haven't returned anything.. we raise the ApiError again.
-  end
-
-private
-
-  # Find my local_ip..
-  def self.local_ip
-    orig, Socket.do_not_reverse_lookup = Socket.do_not_reverse_lookup, true  # turn off reverse DNS resolution temporarily
-
-    UDPSocket.open do |s|
-      s.connect('74.125.77.147', 1) # Connects to a Google IP '74.125.77.147'.
-      s.addr.last
-    end
-  ensure
-    Socket.do_not_reverse_lookup = orig
-  end
-
 end

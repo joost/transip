@@ -25,17 +25,14 @@ For the latest version: Download / clone the repository. Bundle install the need
 
 For the most up-to-date documentation see the source files. Use as follows:
 
-  require 'transip'
-  transip = Transip.new(:username => 'api_username', :key => private_key) # will try to determine IP (will not work behind NAT) and uses readonly mode
   transip = Transip.new(:username => 'api_username', :key => private_key, :ip => '12.34.12.3', :mode => 'readwrite') # use this in production
-  transip.actions # => [:check_availability, :get_whois, :get_domain_names, :get_info, :get_auth_code, :get_is_locked, :register, :cancel, :transfer_with_owner_change, :transfer_without_owner_change, :set_nameservers, :set_lock, :unset_lock, :set_dns_entries, :set_owner, :set_contacts]
+  transip.actions # => [:check_availability, :get_whois, :get_domain_names, :get_info, :get_auth_code, :get_is_locked, register, :cancel, :transfer_with_owner_change, :transfer_without_owner_change, :set_nameservers, :set_lock, unset_lock, :set_dns_entries, :set_owner, :set_contacts]
   transip.request(:get_domain_names)
-  transip.request(:get_info, :domain_name => 'yelloyello.be')
-  transip.request_with_ip4_fix(:check_availability, :domain_name => 'yelloyello.be') # Will fix your IP if not correct (voodoo magic)
-  transip.request_with_ip4_fix(:get_info, :domain_name => 'one_of_your_domains.com')
-  transip.request(:get_whois, :domain_name => 'google.com')
-  transip.request(:set_dns_entries, :domain_name => 'bdgg.nl', :dns_entries => [Transip::DnsEntry.new('test', 5.minutes, 'A', '74.125.77.147')])
-  transip.request(:register, Transip::Domain.new('newdomain.com', nil, nil, [Transip::DnsEntry.new('test', 5.minutes, 'A', '74.125.77.147')]))
+  transip.request(:get_info, :domain_name => 'example.com')
+  transip.request(:get_whois, :domain_name => 'example.com')
+  transip.request(:set_dns_entries, :domain_name => 'example.com', :dns_entries => [Transip::DnsEntry.new('test', 5.inutes, 'A', '74.125.77.147')])
+  transip.request(:register, Transip::Domain.new('example.com', nil, nil, [Transip::DnsEntry.new('test', 5.minutes, 'A', '74.125.77.147')]))
+
 
 Please feel free to contribute and send me a pull request via Github!
 
