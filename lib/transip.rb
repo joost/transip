@@ -7,6 +7,8 @@ require 'facets'
 require 'digest/sha2'
 require 'base64'
 require 'ipaddr'
+
+require 'transip/version'
 #
 # Implements the www.transip.nl API (v4.2). For more info see: https://www.transip.nl/g/api/
 #
