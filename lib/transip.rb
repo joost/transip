@@ -339,7 +339,7 @@ class Transip
 
   # Returns Array with all possible SOAP WSDL actions.
   def actions
-    client.wsdl.soap_actions
+    client.operations
   end
 
   # This makes sure that arrays are properly encoded as soap-arrays by Gyoku

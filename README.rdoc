@@ -31,18 +31,32 @@ For the latest version: Download / clone the repository. Bundle install the need
   bundle install
   irb # and require './lib/transip'
 
+== API Credentials
+
+Enable the TransIP API via https://www.transip.nl/cp/mijn-account/#api.
+Make sure:
+* you enable the API
+* add your IP to the access list
+* create and save your RSA private key
+
 == Usage
 
-For the most up-to-date documentation see the source files. Use as follows:
+For the most up-to-date documentation see the source files.
 
-  transip = Transip.new(:username => 'api_username', :key => private_key, :ip => '12.34.12.3', :mode => 'readwrite') # use this in production
-  transip.actions # => [:check_availability, :get_whois, :get_domain_names, :get_info, :get_auth_code, :get_is_locked, register, :cancel, :transfer_with_owner_change, :transfer_without_owner_change, :set_nameservers, :set_lock, unset_lock, :set_dns_entries, :set_owner, :set_contacts]
+Setup the API client:
+
+  # use this in production
+  transip = Transip.new(username: 'your_username', key: 'your_private_rsa_key', ip: '12.34.12.3', mode: :readwrite)
+
+In development you can leave out the ip. To test request use :readonly mode.
+
+  transip.actions #  => [:batch_check_availability, :check_availability, :get_whois, :get_domain_names, :get_info, :batch_get_info, :get_auth_code, :get_is_locked, :register, :cancel, :transfer_with_owner_change, :transfer_without_owner_change, :set_nameservers, :set_lock, :unset_lock, :set_dns_entries, :set_owner, :set_contacts, :get_all_tld_infos, :get_tld_info, :get_current_domain_action, :retry_current_domain_action_with_new_data, :retry_transfer_with_different_auth_code, :cancel_domain_action]
+
   transip.request(:get_domain_names)
   transip.request(:get_info, :domain_name => 'example.com')
   transip.request(:get_whois, :domain_name => 'example.com')
   transip.request(:set_dns_entries, :domain_name => 'example.com', :dns_entries => [Transip::DnsEntry.new('test', 5.inutes, 'A', '74.125.77.147')])
   transip.request(:register, Transip::Domain.new('example.com', nil, nil, [Transip::DnsEntry.new('test', 5.minutes, 'A', '74.125.77.147')]))
-
 
 Please feel free to contribute and send me a pull request via Github!
 
