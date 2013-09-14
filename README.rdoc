@@ -16,6 +16,14 @@ Credits for full rewrite to work with new TransIP API version go to Richard Bron
 
 == Install
 
+Install from rubygems (rubygems.org/gems/transip):
+
+  gem install transip
+
+or add in your Bundle Gemfile:
+
+  gem 'transip'
+
 For the latest version: Download / clone the repository. Bundle install the needed gems and require the lib.
 
   git clone git://github.com/joost/transip.git
