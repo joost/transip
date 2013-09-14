@@ -1,7 +1,7 @@
 = TransIP API
 
-Ruby gem to use the full TransIP API (v4.2). This fork uses an updated version of savon, and implements the new request signing method that the guys at TransIP have introduced into their api. So far, i have only tested the :get_domain_names, :get_info and :set_dns_entries calls.
-
+Ruby gem to use the full TransIP API (v4.2).
+Uses an updated version of savon, and implements the new request signing method that the guys at TransIP have introduced into their api. So far, i have only tested the :get_domain_names, :get_info and :set_dns_entries calls.
 
 The transip API makes use of public/private key encryption. You need to use the TransIP
 control panel to give your server access to the api, and to generate a key. You can then
