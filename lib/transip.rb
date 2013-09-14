@@ -8,7 +8,7 @@ require 'digest/sha2'
 require 'base64'
 require 'ipaddr'
 
-require 'transip/version'
+require File.expand_path '../transip/version', __FILE__
 #
 # Implements the www.transip.nl API (v4.2). For more info see: https://www.transip.nl/g/api/
 #

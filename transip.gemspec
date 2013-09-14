@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+# coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'transip/version'
@@ -13,9 +13,8 @@ Gem::Specification.new do |spec|
   spec.homepage      = %q{http://github.com/joost/transip}
   spec.license       = "MIT"
 
-  spec.required_rubygems_version = Gem::Requirement.new(">= 0") if spec.respond_to? :required_rubygems_version=
-
-  spec.date          = %q{2013-09-10}
+  spec.files         = `git ls-files`.split($/)
+  spec.require_paths = ["lib"]
 
   spec.add_dependency('savon', '>= 2.3.0')
   spec.add_dependency('curb', '>= 0.8.4')
@@ -25,8 +24,6 @@ Gem::Specification.new do |spec|
     "MIT-LICENSE",
     "README.rdoc"
   ]
-  spec.files          = `git ls-files`.split($/)
   spec.has_rdoc       = true
   spec.rdoc_options   = ["--charset=UTF-8"]
-  spec.require_paths  = ["lib"]
 end
