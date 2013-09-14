@@ -53,7 +53,7 @@ class Transip
     end
 
     # Gyoku.xml (see: https://github.com/rubiii/gyoku) is used by Savon.
-    # It calls to_s on unknown Objects. We use it to convert 
+    # It calls to_s on unknown Objects. We use it to convert
     def to_s
       Gyoku.xml(self.members_to_hash)
     end
@@ -92,7 +92,7 @@ class Transip
       if input.is_a? Array
         result = input.map {|value| from_soap(value)}
       elsif input.is_a? Hash
-        
+
         if input.keys.first == :item
           result = from_soap(input[:item])
         elsif input[:'@xsi:type'] == 'xsd:string'
@@ -105,7 +105,7 @@ class Transip
           result.each do |key, value|
             result[key] = from_soap(value)
           end
-        end        
+        end
       else
         result = input
       end
@@ -177,7 +177,7 @@ class Transip
   end
 
   # Options:
-  # * username 
+  # * username
   # * ip
   # * key
   # * mode
@@ -187,9 +187,9 @@ class Transip
   def initialize(options = {})
     @key = options[:key]
     @username = options[:username]
-    @ip = options[:ip] 
+    @ip = options[:ip]
     raise ArgumentError, "The :username, :ip and :key options are required!" if @username.nil? or @key.nil?
-    
+
     @mode = options[:mode] || :readonly
     @endpoint = options[:endpoint] || 'api.transip.nl'
     if options[:password]
@@ -252,7 +252,7 @@ class Transip
         encoded_parameters << "#{encoded_key}=#{encoded_value}"
       end
     end
-    
+
     encoded_parameters = encoded_parameters.join("&")
     #puts encoded_parameters.split('&').join("\n")
     encoded_parameters
@@ -270,7 +270,7 @@ class Transip
   # I think the guys at transip were trying to use their entire crypto-toolbox!
   def signature(method, parameters, time, nonce)
     formatted_method = method.to_s.lower_camelcase
-    parameters ||= {} 
+    parameters ||= {}
     input = convert_array_to_hash(parameters.values)
     options = {
       '__method' => formatted_method,
@@ -278,12 +278,12 @@ class Transip
       '__hostname' => @endpoint,
       '__timestamp' => time,
       '__nonce' => nonce
-  
+
     }
     input.merge!(options)
     raise "Invalid RSA key" unless @key =~ /-----BEGIN RSA PRIVATE KEY-----(.*)-----END RSA PRIVATE KEY-----/sim
     serialized_input = serialize_parameters(input)
-    
+
     digest = Digest::SHA512.new.digest(serialized_input)
     asn_header = "\x30\x51\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x03\x05\x00\x04\x40"
     asn = asn_header + digest
@@ -321,7 +321,7 @@ class Transip
   # You have to use this one when you want to re-set the mode (readwrite, readonly),
   # or authentication details of your client.
   def client!
-    @client = Savon::Client.new(@savon_options) do 
+    @client = Savon::Client.new(@savon_options) do
       namespaces(
         "xmlns:enc" => "http://schemas.xmlsoap.org/soap/encoding/"
       )
@@ -347,7 +347,7 @@ class Transip
       if value.is_a? Array and value.size > 0
         entry_name = value.first.class.name.split(":").last
         result[key] = {
-          'item' => {:content! => value, :'@xsi:type' => "tns:#{entry_name}"}, 
+          'item' => {:content! => value, :'@xsi:type' => "tns:#{entry_name}"},
           :'@xsi:type' => "tns:ArrayOf#{entry_name}",
           :'@enc:arrayType' => "tns:#{entry_name}[#{value.size}]"
         }
@@ -366,7 +366,7 @@ class Transip
   def process_response(response)
     response = response.to_hash.values.first[:return] rescue nil
     TransipStruct.from_soap(response)
-    
+
   end
 
   # This is the main request function
@@ -380,7 +380,7 @@ class Transip
       :message_tag => formatted_action
     }
     options = options.to_hash  if options.is_a? Transip::TransipStruct
-      
+
     if options.is_a? Hash
       xml_options = fix_array_definitions(options)
     elsif options.nil?
@@ -391,8 +391,8 @@ class Transip
     parameters[:message] = xml_options
     parameters[:cookies] = cookies(action, options)
     #puts parameters.inspect
-    response = client.call(action, parameters) 
-    
+    response = client.call(action, parameters)
+
     process_response(response)
   rescue Savon::SOAPFault => e
     raise ApiError.new(e), e.message.sub(/^\(\d+\)\s+/,'') # We raise our own error (FIXME: Correct?).

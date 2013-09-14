@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.add_dependency('savon', '>= 2.3.0')
   s.add_dependency('curb', '>= 0.8.4')
   s.add_dependency('facets', '>= 2.9.3')
-  
+
   s.extra_rdoc_files = [
     "MIT-LICENSE",
     "README.rdoc"

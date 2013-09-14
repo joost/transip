@@ -9,14 +9,16 @@ use the key together with your username to gain access to the api
 
 For more info see:
 
-* <b>The origin of this code:</b> https://github.com/joost/transip-api
+* <b>The origin of this code:</b> https://github.com/joost/transip
 * <b>TransIP API Docs:</b> https://www.transip.nl/g/api
+
+Credits for full rewrite to work with new TransIP API version go to Richard Bronkhorst (https://github.com/richmans).
 
 == Install
 
 For the latest version: Download / clone the repository. Bundle install the needed gems and require the lib.
 
-  git clone git://github.com/richmans/transip.git
+  git clone git://github.com/joost/transip.git
   cd transip
   bundle install
   irb # and require './lib/transip'
