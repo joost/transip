@@ -3,7 +3,7 @@ require "bundler/setup"
 require 'securerandom'
 require 'savon'
 require 'curb'
-require 'facets'
+require 'facets/string'
 require 'digest/sha2'
 require 'base64'
 require 'ipaddr'
