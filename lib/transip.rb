@@ -283,7 +283,7 @@ class Transip
 
     }
     input.merge!(options)
-    raise "Invalid RSA key" unless @key =~ /-----BEGIN RSA PRIVATE KEY-----(.*)-----END RSA PRIVATE KEY-----/sim
+    raise "Invalid RSA key" unless @key =~ /-----BEGIN (RSA )?PRIVATE KEY-----(.*)-----END (RSA )?PRIVATE KEY-----/sim
     serialized_input = serialize_parameters(input)
 
     digest = Digest::SHA512.new.digest(serialized_input)
