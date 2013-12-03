@@ -288,7 +288,13 @@ class Transip
 
     digest = Digest::SHA512.new.digest(serialized_input)
     asn_header = "\x30\x51\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x03\x05\x00\x04\x40"
-    asn = asn_header + digest
+
+    # convert asn_header literal to ASCII-8BIT
+    if RUBY_VERSION.split('.')[0] == "2"
+    	asn = asn_header.b + digest
+    else
+    	asn = asn_header + digest
+    end
     private_key = OpenSSL::PKey::RSA.new(@key)
     encrypted_asn = private_key.private_encrypt(asn)
     readable_encrypted_asn = Base64.encode64(encrypted_asn)
