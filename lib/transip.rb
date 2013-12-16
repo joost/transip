@@ -22,6 +22,7 @@ require File.expand_path '../transip/version', __FILE__
 #  transip.request(:get_info, :domain_name => 'example.com')
 #  transip.request(:get_whois, :domain_name => 'example.com')
 #  transip.request(:set_dns_entries, :domain_name => 'example.com', :dns_entries => [Transip::DnsEntry.new('test', 5.minutes, 'A', '74.125.77.147')])
+#  transip.request(:set_contacts, :domain_name => 'example.com', :contacts => [Transip::WhoisContact.new('type', 'first', 'middle', 'last', 'company', 'kvk', 'companyType', 'street','number','postalCode','city','phoneNumber','faxNumber','email','country')])
 #  transip.request(:register, Transip::Domain.new('example.com', nil, nil, [Transip::DnsEntry.new('test', 5.minutes, 'A', '74.125.77.147')]))
 #
 class Transip
@@ -60,9 +61,16 @@ class Transip
       Gyoku.xml(self.members_to_hash)
     end
 
+    def member_name_to_camel(name)
+      parts = name.to_s.split("_")
+      parts.map{|p|p.capitalize!}
+      parts[0].downcase!
+      parts.join
+    end
+
     # See what happens here: http://snippets.dzone.com/posts/show/302
     def members_to_hash
-      Hash[*members.collect {|m| [m, self.send(m)]}.flatten]
+      Hash[*members.collect {|m| [member_name_to_camel(m), self.send(m)]}.flatten]
     end
 
     def to_hash
