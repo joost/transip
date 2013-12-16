@@ -57,6 +57,7 @@ In development you can leave out the ip. To test request use :readonly mode.
   transip.request(:get_whois, :domain_name => 'example.com')
   transip.request(:set_dns_entries, :domain_name => 'example.com', :dns_entries => [Transip::DnsEntry.new('test', 5.inutes, 'A', '74.125.77.147')])
   transip.request(:register, Transip::Domain.new('example.com', nil, nil, [Transip::DnsEntry.new('test', 5.minutes, 'A', '74.125.77.147')]))
+  transip.request(:set_contacts, :domain_name => 'example.com', :contacts => [Transip::WhoisContact.new('type', 'first', 'middle', 'last', 'company', 'kvk', 'companyType', 'street', 'number', 'postalCode', 'city', 'phoneNumber', 'faxNumber', 'email', 'country')])
 
 Please feel free to contribute and send me a pull request via Github!
 
