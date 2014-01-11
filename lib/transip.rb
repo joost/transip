@@ -9,14 +9,17 @@ require 'base64'
 require 'ipaddr'
 
 require File.expand_path '../transip/version', __FILE__
+require File.expand_path '../transip/client', __FILE__
+require File.expand_path '../transip/api_error', __FILE__
+
 #
-# Implements the www.transip.nl API (v4.2). For more info see: https://www.transip.nl/g/api/
+# Implements the www.transip.nl API (v5.0). For more info see: https://www.transip.nl/g/api/
 #
 # The transip API makes use of public/private key encryption. You need to use the TransIP
 # control panel to give your server access to the api, and to generate a key. You can then
 # use the key together with your username to gain access to the api
 # Usage:
-#  transip = Transip.new(:username => 'api_username', :key => private_key, :ip => '12.34.12.3', :mode => 'readwrite') # use this in production
+#  transip = Transip::DomainClient.new(:username => 'api_username', :key => private_key, :ip => '12.34.12.3', :mode => 'readwrite') # use this in production
 #  transip.actions # => [:check_availability, :get_whois, :get_domain_names, :get_info, :get_auth_code, :get_is_locked, :register, :cancel, :transfer_with_owner_change, :transfer_without_owner_change, :set_nameservers, :set_lock, :unset_lock, :set_dns_entries, :set_owner, :set_contacts]
 #  transip.request(:get_domain_names)
 #  transip.request(:get_info, :domain_name => 'example.com')
@@ -25,17 +28,7 @@ require File.expand_path '../transip/version', __FILE__
 #  transip.request(:set_contacts, :domain_name => 'example.com', :contacts => [Transip::WhoisContact.new('type', 'first', 'middle', 'last', 'company', 'kvk', 'companyType', 'street','number','postalCode','city','phoneNumber','faxNumber','email','country')])
 #  transip.request(:register, Transip::Domain.new('example.com', nil, nil, [Transip::DnsEntry.new('test', 5.minutes, 'A', '74.125.77.147')]))
 #
-class Transip
-  SERVICE = 'DomainService'
-  WSDL = 'https://api.transip.nl/wsdl/?service=DomainService'
-  API_VERSION = '4.2'
-
-  attr_accessor :username, :password, :ip, :mode, :hash
-  attr_reader :response
-
-  # Following Error needs to be catched in your code!
-  class ApiError < RuntimeError
-  end
+module Transip
 
   # Following subclasses are actually not needed (as you can also
   # do the same by just creating hashes..).
@@ -186,231 +179,13 @@ class Transip
   class Tld < TransipStruct.new(:name, :price, :renewal_price, :capabilities, :registration_period_length, :cancel_time_frame)
   end
 
-  # Options:
-  # * username
-  # * ip
-  # * key
-  # * mode
-  #
-  # Example:
-  #  transip = Transip.new(:username => 'api_username', :ip => '12.34.12.3', :key => mykey, :mode => 'readwrite') # use this in production
-  def initialize(options = {})
-    @key = options[:key]
-    @username = options[:username]
-    @ip = options[:ip]
-    raise ArgumentError, "The :username, :ip and :key options are required!" if @username.nil? or @key.nil?
+# VPS related methods
+# Available from TransIp v5.0.
 
-    @mode = options[:mode] || :readonly
-    @endpoint = options[:endpoint] || 'api.transip.nl'
-    if options[:password]
-      @password = options[:password]
-    end
-    @savon_options = {
-      :wsdl => WSDL
-    }
-    # By default we don't want to debug!
-    self.turn_off_debugging!
+  class Vps < TransipStruct.new(:name, :description, :operating_system, :disk_size, :memory_size, :cpus, :status, :ip_address, :vnc_hostname, :vnc_port_number, :vnc_password, :is_blocked, :is_customer_locked)
   end
 
-  # By default we don't want to debug!
-  # Changing might impact other Savon usages.
-  def turn_off_debugging!
-      @savon_options[:log] = false            # disable logging
-      @savon_options[:log_level] = :info      # changing the log level
+  class VpsService < TransipStruct.new(:name, :description, :operating_system, :disk_size, :memory_size, :cpus, :status, :ip_address, :vnc_hostname, :vnc_port_number, :vnc_password, :is_blocked, :is_customer_locked)
   end
 
-
-  # Make Savon log to Rails.logger and turn_off_debugging!
-  def use_with_rails!
-    if Rails.env.production?
-      self.turn_off_debugging!
-    end
-    @savon_options[:logger] = Rails.logger  # using the Rails logger
-  end
-
-  # yes, i know, it smells bad
-  def convert_array_to_hash(array)
-    result = {}
-    array.each_with_index do |value, index|
-      result[index] = value
-    end
-    result
-  end
-
-  def urlencode(input)
-    output = URI.encode_www_form_component(input)
-    output.gsub!('+', '%20')
-    output.gsub!('%7E', '~')
-    output
-  end
-
-  def serialize_parameters(parameters, key_prefix=nil)
-    parameters = parameters.to_hash.values.first if parameters.is_a? TransipStruct
-    parameters = convert_array_to_hash(parameters) if parameters.is_a? Array
-    if not parameters.is_a? Hash
-      return urlencode(parameters)
-    end
-
-    encoded_parameters = []
-    parameters.each do |key, value|
-      next if key.to_s == '@xsi:type'
-      encoded_key = (key_prefix.nil?) ? urlencode(key) : "#{key_prefix}[#{urlencode(key)}]"
-      if value.is_a? Hash or value.is_a? Array or value.is_a? TransipStruct
-        encoded_parameters << serialize_parameters(value, encoded_key)
-      else
-        encoded_value = urlencode(value)
-        encoded_parameters << "#{encoded_key}=#{encoded_value}"
-      end
-    end
-
-    encoded_parameters = encoded_parameters.join("&")
-    #puts encoded_parameters.split('&').join("\n")
-    encoded_parameters
-  end
-
-
-  # does all the techy stuff to calculate transip's sick authentication scheme:
-  # a hash with all the request information is subsequently:
-  # serialized like a www form
-  # SHA512 digested
-  # asn1 header added
-  # private key encrypted
-  # Base64 encoded
-  # URL encoded
-  # I think the guys at transip were trying to use their entire crypto-toolbox!
-  def signature(method, parameters, time, nonce)
-    formatted_method = method.to_s.lower_camelcase
-    parameters ||= {}
-    input = convert_array_to_hash(parameters.values)
-    options = {
-      '__method' => formatted_method,
-      '__service' => SERVICE,
-      '__hostname' => @endpoint,
-      '__timestamp' => time,
-      '__nonce' => nonce
-
-    }
-    input.merge!(options)
-    raise "Invalid RSA key" unless @key =~ /-----BEGIN (RSA )?PRIVATE KEY-----(.*)-----END (RSA )?PRIVATE KEY-----/sim
-    serialized_input = serialize_parameters(input)
-
-    digest = Digest::SHA512.new.digest(serialized_input)
-    asn_header = "\x30\x51\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x03\x05\x00\x04\x40"
-
-    # convert asn_header literal to ASCII-8BIT
-    if RUBY_VERSION.split('.')[0] == "2"
-    	asn = asn_header.b + digest
-    else
-    	asn = asn_header + digest
-    end
-    private_key = OpenSSL::PKey::RSA.new(@key)
-    encrypted_asn = private_key.private_encrypt(asn)
-    readable_encrypted_asn = Base64.encode64(encrypted_asn)
-    urlencode(readable_encrypted_asn)
-  end
-
-  def to_cookies(content)
-    content.map do |item|
-      HTTPI::Cookie.new item
-    end
-  end
-
-
-  # Used for authentication
-  def cookies(method, parameters)
-    time = Time.new.to_i
-    #strip out the -'s because transip requires the nonce to be between 6 and 32 chars
-    nonce = SecureRandom.uuid.gsub("-", '')
-    result = to_cookies [ "login=#{self.username}",
-                 "mode=#{self.mode}",
-                 "timestamp=#{time}",
-                 "nonce=#{nonce}",
-                 "clientVersion=#{API_VERSION}",
-                 "signature=#{signature(method, parameters, time, nonce)}"
-
-               ]
-    #puts signature(method, parameters, time, nonce)
-    result
-  end
-
-  # Same as client method but initializes a brand new fresh client.
-  # You have to use this one when you want to re-set the mode (readwrite, readonly),
-  # or authentication details of your client.
-  def client!
-    @client = Savon::Client.new(@savon_options) do
-      namespaces(
-        "xmlns:enc" => "http://schemas.xmlsoap.org/soap/encoding/"
-      )
-    end
-    return @client
-  end
-
-  # Returns a Savon::Client object to be used in the connection.
-  # This object is re-used and cached as @client.
-  def client
-    @client ||= client!
-  end
-
-  # Returns Array with all possible SOAP WSDL actions.
-  def actions
-    client.operations
-  end
-
-  # This makes sure that arrays are properly encoded as soap-arrays by Gyoku
-  def fix_array_definitions(options)
-    result = {}
-    options.each do |key, value|
-      if value.is_a? Array and value.size > 0
-        entry_name = value.first.class.name.split(":").last
-        result[key] = {
-          'item' => {:content! => value, :'@xsi:type' => "tns:#{entry_name}"},
-          :'@xsi:type' => "tns:ArrayOf#{entry_name}",
-          :'@enc:arrayType' => "tns:#{entry_name}[#{value.size}]"
-        }
-      else
-        result[key] = value
-      end
-    end
-    result
-  end
-
-
-  # converts the savon response object to something we can return to the caller
-  # - A TransipStruct object
-  # - An array of TransipStructs
-  # - nil
-  def process_response(response)
-    response = response.to_hash.values.first[:return] rescue nil
-    TransipStruct.from_soap(response)
-
-  end
-
-  # This is the main request function
-  # throws ApiError
-  # returns response object (can be TransipStruct or Array of TransipStruct)
-  def request(action, options = nil)
-    formatted_action = action.to_s.lower_camelcase
-    parameters = {
-      # for some reason, the transip server wants the body root tag to be
-      # the name of the action.
-      :message_tag => formatted_action
-    }
-    options = options.to_hash  if options.is_a? Transip::TransipStruct
-
-    if options.is_a? Hash
-      xml_options = fix_array_definitions(options)
-    elsif options.nil?
-      xml_options = nil
-    else
-      raise "Invalid parameter format (should be nil, hash or TransipStruct"
-    end
-    parameters[:message] = xml_options
-    parameters[:cookies] = cookies(action, options)
-    #puts parameters.inspect
-    response = client.call(action, parameters)
-
-    process_response(response)
-  rescue Savon::SOAPFault => e
-    raise ApiError.new(e), e.message.sub(/^\(\d+\)\s+/,'') # We raise our own error (FIXME: Correct?).
-  end
 end

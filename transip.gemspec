@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = Transip::VERSION
   spec.authors       = ["Joost Hietbrink", "Richard Bronkhorst"]
   spec.email         = ["joost@joopp.com"]
-  spec.description   = %q{Ruby gem to use the full TransIP API (v4.2).}
-  spec.summary       = %q{Ruby gem to use the full TransIP API (v4.2).}
+  spec.description   = %q{Ruby gem to use the full TransIP API (v5.0).}
+  spec.summary       = %q{Ruby gem to use the full TransIP API (v5.0).}
   spec.homepage      = %q{http://github.com/joost/transip}
   spec.license       = "MIT"
 

@@ -1,18 +1,16 @@
 = TransIP API
 
-Ruby gem to use the full TransIP API (v4.2).
-Uses an updated version of savon, and implements the new request signing method that the guys at TransIP have introduced into their api. So far, i have only tested the :get_domain_names, :get_info and :set_dns_entries calls.
+Ruby gem to use the full TransIP (www.transip.nl) API (v5.0).
+Uses an updated version of savon and implements the new request signing method that the guys at TransIP have introduced into their API.
 
-The transip API makes use of public/private key encryption. You need to use the TransIP
-control panel to give your server access to the api, and to generate a key. You can then
-use the key together with your username to gain access to the api
+The TransIP API makes use of public/private key encryption. You need to use the TransIP
+control panel to give your server access to the API and to generate a key. You can then
+use the key together with your username to gain access to the API.
 
 For more info see:
 
 * <b>The origin of this code:</b> https://github.com/joost/transip
 * <b>TransIP API Docs:</b> https://www.transip.nl/g/api
-
-Credits for full rewrite to work with new TransIP API version go to Richard Bronkhorst (https://github.com/richmans).
 
 == Install
 
@@ -46,9 +44,19 @@ For the most up-to-date documentation see the source files.
 Setup the API client:
 
   # use this in production
-  transip = Transip.new(username: 'your_username', key: 'your_private_rsa_key', ip: '12.34.12.3', mode: :readwrite)
+  transip = Transip::DomainClient.new(username: 'your_username', key: 'your_private_rsa_key', ip: '12.34.12.3', mode: :readwrite)
+
+You can use Transip::DomainClient, Transip::VpsClient, Transip::ColocationClient, Transip::WebhostingClient and Transip::ForwardClient.
 
 In development you can leave out the ip. To test request use :readonly mode.
+
+If you store your private key in a seperate file you can do:
+
+  transip = Transip::DomainClient.new(username: 'your_username', key_file: 'path_to_your_private_key_file', ip: '12.34.12.3', mode: :readwrite)
+
+=== DomainClient
+
+  transip = Transip::DomainClient.new(username: 'your_username', key: 'your_private_rsa_key', ip: '12.34.12.3', mode: :readwrite)
 
   transip.actions #  => [:batch_check_availability, :check_availability, :get_whois, :get_domain_names, :get_info, :batch_get_info, :get_auth_code, :get_is_locked, :register, :cancel, :transfer_with_owner_change, :transfer_without_owner_change, :set_nameservers, :set_lock, :unset_lock, :set_dns_entries, :set_owner, :set_contacts, :get_all_tld_infos, :get_tld_info, :get_current_domain_action, :retry_current_domain_action_with_new_data, :retry_transfer_with_different_auth_code, :cancel_domain_action]
 
@@ -56,9 +64,17 @@ In development you can leave out the ip. To test request use :readonly mode.
   transip.request(:get_info, :domain_name => 'example.com')
   transip.request(:get_whois, :domain_name => 'example.com')
   transip.request(:set_dns_entries, :domain_name => 'example.com', :dns_entries => [Transip::DnsEntry.new('test', 5.inutes, 'A', '74.125.77.147')])
-  transip.request(:register, Transip::Domain.new('example.com', nil, nil, [Transip::DnsEntry.new('test', 5.minutes, 'A', '74.125.77.147')]))
+  transip.request(:register, Transip::Domain.new('example.com', nil, nil, [Transip::DnsEntry.new('test', 300, 'A', '74.125.77.147')]))
   transip.request(:set_contacts, :domain_name => 'example.com', :contacts => [Transip::WhoisContact.new('type', 'first', 'middle', 'last', 'company', 'kvk', 'companyType', 'street', 'number', 'postalCode', 'city', 'phoneNumber', 'faxNumber', 'email', 'country')])
+
+=== VpsClient
+
+  transip_vps = Transip::VpsClient.new(username: 'your_username', key: 'your_private_rsa_key', ip: '12.34.12.3', mode: :readwrite)
+
+  transip_vps.actions # => [:get_available_products, :get_available_addons, :get_active_addons_for_vps, :get_available_upgrades, :get_available_addons_for_vps, :get_cancellable_addons_for_vps, :order_vps, :order_addon, :order_private_network, :upgrade_vps, :cancel_vps, :cancel_addon, :cancel_private_network, :get_private_networks_by_vps, :get_all_private_networks, :add_vps_to_private_network, :remove_vps_from_private_network, :get_amount_of_traffic_used, :start, :stop, :reset, :create_snapshot, :revert_snapshot, :remove_snapshot, :get_vps, :get_vpses, :get_snapshots_by_vps, :get_operating_systems, :install_operating_system, :get_ips_for_vps, :get_all_ips, :add_ipv6_to_vps, :update_ptr_record]
+
+== Contribute and licence
 
 Please feel free to contribute and send me a pull request via Github!
 
-Copyright (c) 2013 Richard Bronkhorst, released under the MIT license
+(C)opyright 2014 Joost Hietbrink / Richard Bronkhorst, released under the MIT license
