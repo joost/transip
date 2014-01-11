@@ -24,7 +24,7 @@ or add in your Bundle Gemfile:
 
 For the latest version: Download / clone the repository. Bundle install the needed gems and require the lib.
 
-  git clone git://github.com/joost/transip.git
+  git clone https://github.com/joost/transip.git
   cd transip
   bundle install
   irb # and require './lib/transip'
@@ -77,4 +77,4 @@ If you store your private key in a seperate file you can do:
 
 Please feel free to contribute and send me a pull request via Github!
 
-(C)opyright 2014 Joost Hietbrink / Richard Bronkhorst, released under the MIT license
+(C)opyright 2014 Joost Hietbrink / Richard Bronkhorst, released under the MIT license.
