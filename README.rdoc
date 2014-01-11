@@ -1,6 +1,8 @@
 = TransIP API
 
 Ruby gem to use the full TransIP API (v4.2).
+A first version towards TransIP v5.0 support (including VPS services) is branched in https://github.com/joost/transip/tree/api_v5.0.
+
 Uses an updated version of savon, and implements the new request signing method that the guys at TransIP have introduced into their api. So far, i have only tested the :get_domain_names, :get_info and :set_dns_entries calls.
 
 The transip API makes use of public/private key encryption. You need to use the TransIP
