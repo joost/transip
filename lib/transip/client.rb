@@ -46,7 +46,7 @@ module Transip
         :wsdl => wsdl
       }
       # By default we don't want to debug!
-      # self.turn_off_debugging!
+      self.turn_off_debugging!
     end
 
     # By default we don't want to debug!
@@ -100,7 +100,7 @@ module Transip
       end
 
       encoded_parameters = encoded_parameters.join("&")
-      puts encoded_parameters.split('&').join("\n")
+      # puts encoded_parameters.split('&').join("\n")
       encoded_parameters
     end
 

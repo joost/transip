@@ -73,6 +73,10 @@ If you store your private key in a seperate file you can do:
 
   transip_vps.actions # => [:get_available_products, :get_available_addons, :get_active_addons_for_vps, :get_available_upgrades, :get_available_addons_for_vps, :get_cancellable_addons_for_vps, :order_vps, :order_addon, :order_private_network, :upgrade_vps, :cancel_vps, :cancel_addon, :cancel_private_network, :get_private_networks_by_vps, :get_all_private_networks, :add_vps_to_private_network, :remove_vps_from_private_network, :get_amount_of_traffic_used, :start, :stop, :reset, :create_snapshot, :revert_snapshot, :remove_snapshot, :get_vps, :get_vpses, :get_snapshots_by_vps, :get_operating_systems, :install_operating_system, :get_ips_for_vps, :get_all_ips, :add_ipv6_to_vps, :update_ptr_record]
 
+  transip_vps.request(:get_available_products)
+  transip_vps.request(:get_operating_systems)
+  transip_vps.request(:order_vps, product_name: 'vps-bladevps-x1', addons: nil, operating_system_name: 'ubuntu-12.04.1-transip', hostname: 'my.hostname.com')
+
 == Contribute and licence
 
 Please feel free to contribute and send me a pull request via Github!
