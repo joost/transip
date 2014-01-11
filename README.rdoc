@@ -77,6 +77,12 @@ If you store your private key in a seperate file you can do:
   transip_vps.request(:get_operating_systems)
   transip_vps.request(:order_vps, product_name: 'vps-bladevps-x1', addons: nil, operating_system_name: 'ubuntu-12.04.1-transip', hostname: 'my.hostname.com')
 
+=== ColocationClient, WebhostingClient and ForwardClient
+
+Same as above.
+
+Find out full methods and parameters by going throught the PHP sources of the TransIP API. You can find them via www.transip.nl.
+
 == Contribute and licence
 
 Please feel free to contribute and send me a pull request via Github!
