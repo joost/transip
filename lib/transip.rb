@@ -63,7 +63,7 @@ module Transip
 
     # See what happens here: http://snippets.dzone.com/posts/show/302
     def members_to_hash
-      Hash[*members.collect {|m| [member_name_to_camel(m), self.send(m)]}.flatten]
+      Hash[*members.collect {|m| [member_name_to_camel(m), self.send(m)]}.flatten(1)]
     end
 
     def to_hash

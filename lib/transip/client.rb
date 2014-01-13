@@ -21,6 +21,8 @@ module Transip
       "https://api.transip.nl/wsdl/?service=#{api_service}"
     end
 
+    attr_accessor :debug
+
     # Options:
     # * username - Your login name on the TransIP website.
     # * ip - needed in production
@@ -46,7 +48,7 @@ module Transip
         :wsdl => wsdl
       }
       # By default we don't want to debug!
-      self.turn_off_debugging!
+      # self.turn_off_debugging!
     end
 
     # By default we don't want to debug!
@@ -81,17 +83,20 @@ module Transip
     end
 
     def serialize_parameters(parameters, key_prefix=nil)
+      debug_log("serialize_parameters(#{parameters.inspect}, #{key_prefix.inspect}")
+
       parameters = parameters.to_hash.values.first if parameters.is_a? TransipStruct
       parameters = convert_array_to_hash(parameters) if parameters.is_a? Array
       if not parameters.is_a? Hash
         return urlencode(parameters)
       end
+      return "#{key_prefix}=" if parameters.empty?
 
       encoded_parameters = []
       parameters.each do |key, value|
         next if key.to_s == '@xsi:type'
         encoded_key = (key_prefix.nil?) ? urlencode(key) : "#{key_prefix}[#{urlencode(key)}]"
-        if value.is_a? Hash or value.is_a? Array or value.is_a? TransipStruct
+        if value.is_a?(Hash) or value.is_a?(Array) or value.is_a?(TransipStruct)
           encoded_parameters << serialize_parameters(value, encoded_key)
         else
           encoded_value = urlencode(value)
@@ -100,7 +105,7 @@ module Transip
       end
 
       encoded_parameters = encoded_parameters.join("&")
-      # puts encoded_parameters.split('&').join("\n")
+      debug_log("encoded_parameters:\n#{encoded_parameters.split('&').join("\n")}")
       encoded_parameters
     end
 
@@ -163,7 +168,7 @@ module Transip
                    "signature=#{signature(method, parameters, time, nonce)}"
 
                  ]
-      #puts signature(method, parameters, time, nonce)
+      debug_log("signature:\n#{signature(method, parameters, time, nonce)}")
       result
     end
 
@@ -238,13 +243,20 @@ module Transip
       end
       parameters[:message] = xml_options
       parameters[:cookies] = cookies(action, options)
-      #puts parameters.inspect
+      debug_log("parameters:\n#{parameters.inspect}")
       response = client.call(action, parameters)
 
       process_response(response)
     rescue Savon::SOAPFault => e
       raise ApiError.new(e), e.message.sub(/^\(\d+\)\s+/,'') # We raise our own error (FIXME: Correct?).
     end
+
+  private
+
+    def debug_log(msg)
+      puts msg if @debug
+    end
+
   end
 
   # 'Aliased' by Transip::Client.
