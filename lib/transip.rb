@@ -33,6 +33,7 @@ module Transip
   # Backwards compatibility with v3.x of the gem.
   # TODO: Remove
   def self.new(*args)
+    puts "Transip.new is deprecated. Use Transip::DomainClient.new instead!"
     Client.new(*args)
   end
 
