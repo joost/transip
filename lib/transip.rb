@@ -30,6 +30,12 @@ require File.expand_path '../transip/api_error', __FILE__
 #
 module Transip
 
+  # Backwards compatibility with v3.x of the gem.
+  # TODO: Remove
+  def self.new(*args)
+    Client.new(*args)
+  end
+
   # Following subclasses are actually not needed (as you can also
   # do the same by just creating hashes..).
 
