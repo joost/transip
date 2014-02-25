@@ -119,7 +119,7 @@ module Transip
     # URL encoded
     # I think the guys at transip were trying to use their entire crypto-toolbox!
     def signature(method, parameters, time, nonce)
-      formatted_method = method.to_s.lower_camelcase
+      formatted_method = method.to_s.camelize(:lower)
       parameters ||= {}
       input = convert_array_to_hash(parameters.values)
       options = {
@@ -228,7 +228,7 @@ module Transip
     # throws ApiError
     # returns response object (can be TransipStruct or Array of TransipStruct)
     def request(action, options = nil)
-      formatted_action = action.to_s.lower_camelcase
+      formatted_action = action.to_s.camelize(:lower)
       parameters = {
         # for some reason, the transip server wants the body root tag to be
         # the name of the action.

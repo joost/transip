@@ -1,9 +1,9 @@
-require "rubygems"
-require "bundler/setup"
+require 'rubygems'
+require 'bundler/setup'
 require 'securerandom'
 require 'savon'
 require 'curb'
-require 'facets/string'
+require 'active_support/inflector'
 require 'digest/sha2'
 require 'base64'
 require 'ipaddr'
