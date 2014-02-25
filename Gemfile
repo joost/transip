@@ -1,6 +1,4 @@
-source "http://rubygems.org"
-source 'http://gemcutter.org'
-source 'http://gems.github.com'
+source 'https://rubygems.org'
 
 gem 'savon', '>= 2.3.0'
 gem 'curb', '>= 0.8.4'
