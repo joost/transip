@@ -206,6 +206,8 @@ module Transip
             :'@xsi:type' => "tns:ArrayOf#{entry_name}",
             :'@enc:arrayType' => "tns:#{entry_name}[#{value.size}]"
           }
+        elsif value.is_a?(Hash)
+          result[key] = fix_array_definitions(value)
         else
           result[key] = value
         end
