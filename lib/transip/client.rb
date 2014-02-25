@@ -48,7 +48,7 @@ module Transip
         :wsdl => wsdl
       }
       # By default we don't want to debug!
-      # self.turn_off_debugging!
+       self.turn_off_debugging!
     end
 
     # By default we don't want to debug!
