@@ -28,13 +28,15 @@ module Transip
     # * ip - needed in production
     # * key / key_file - key is one of your private keys (these can be requested via your Controlpanel). key_file is path to file containing key.
     # * mode - :readonly, :readwrite
+    # * proxy - url of proxy through which you want to route API requests. For example, if you use Quataguard Static on Heroku, use ENV["QUOTAGUARDSTATIC_URL"]. If not used, leave blank or don't supply it as a parameter.
     #
     # Example:
-    #  transip = Transip.new(:username => 'api_username', :ip => '12.34.12.3', :key => mykey, :mode => 'readwrite') # use this in production
+    #  transip = Transip.new(:username => 'api_username', :ip => '12.34.12.3', :key => mykey, :mode => 'readwrite', :proxy => '') # use this in production
     def initialize(options = {})
       @key = options[:key] || (options[:key_file] && File.read(options[:key_file]))
       @username = options[:username]
       @ip = options[:ip]
+      @proxy = options[:proxy]
       @api_version = options[:api_version]
       @api_service = options[:api_service]
       raise ArgumentError, "The :username, :ip and :key options are required!" if @username.nil? or @key.nil?
@@ -44,9 +46,14 @@ module Transip
       if options[:password]
         @password = options[:password]
       end
-      @savon_options = {
+
+     @savon_options = {
         :wsdl => wsdl
       }
+      # if proxy is present, use it
+      if @proxy.present?
+	      @savon_options[:proxy] = proxy
+	  end
       # By default we don't want to debug!
        self.turn_off_debugging!
     end
