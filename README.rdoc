@@ -46,6 +46,7 @@ Setup the API client:
   # use this in production
   transip = Transip::DomainClient.new(username: 'your_username', key: 'your_private_rsa_key', ip: '12.34.12.3', mode: :readwrite)
 
+
 You can use Transip::DomainClient, Transip::VpsClient, Transip::ColocationClient, Transip::WebhostingClient and Transip::ForwardClient.
 
 In development you can leave out the ip. To test request use :readonly mode.
@@ -53,6 +54,11 @@ In development you can leave out the ip. To test request use :readonly mode.
 If you store your private key in a seperate file you can do:
 
   transip = Transip::DomainClient.new(username: 'your_username', key_file: 'path_to_your_private_key_file', ip: '12.34.12.3', mode: :readwrite)
+
+=== Using a proxy for routing traffic to TransIP
+  transip = Transip::DomainClient.new(username: 'your_username', key: 'your_private_rsa_key', ip: '12.34.12.3', mode: :readwrite, proxy: ENV["QUOTAGUARDSTATIC_URL"])
+
+If you want to use a proxy through which you want to route the API calls to TransIP, you can supply the proxy parameter. For example, I use QuotaGuard Static (https://addons.heroku.com/quotaguardstatic) on Heroku. First install the addon, you will receive two static IP addresses. Whitelist these in the TransIP API settings page. Next, supply the proxy url. For instance, I use the environment variable QUOTAGUARDSTATIC_URL to supply this URL.
 
 === DomainClient
 
