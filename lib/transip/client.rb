@@ -51,7 +51,7 @@ module Transip
         :wsdl => wsdl
       }
       # if proxy is present, use it
-      if @proxy.present?
+      if @proxy == nil
 	      @savon_options[:proxy] = @proxy
 	  end
       # By default we don't want to debug!
