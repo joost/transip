@@ -35,6 +35,7 @@ Enable the TransIP API via https://www.transip.nl/cp/mijn-account/#api.
 Make sure:
 * you enable the API
 * add your IP to the access list
+* If your host supports ipv6, also add your ipv6 ip!
 * create and save your RSA private key
 
 == Usage
