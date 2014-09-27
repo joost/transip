@@ -1,8 +1,5 @@
-require 'rubygems'
-require 'bundler/setup'
 require 'securerandom'
 require 'savon'
-require 'active_support/inflector'
 require 'digest/sha2'
 require 'base64'
 require 'ipaddr'

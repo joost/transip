@@ -1,12 +1,6 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (4.1.6)
-      i18n (~> 0.6, >= 0.6.9)
-      json (~> 1.7, >= 1.7.7)
-      minitest (~> 5.1)
-      thread_safe (~> 0.1)
-      tzinfo (~> 1.1)
     akami (1.2.0)
       gyoku (>= 0.4.0)
       nokogiri (>= 1.4.0)
@@ -16,9 +10,6 @@ GEM
     httpi (2.1.0)
       rack
       rubyntlm (~> 0.3.2)
-    i18n (0.6.11)
-    json (1.8.1)
-    minitest (5.4.2)
     nokogiri (1.5.10)
     nori (2.3.0)
     rack (1.5.2)
@@ -31,9 +22,6 @@ GEM
       nokogiri (>= 1.4.0, < 1.6)
       nori (~> 2.3.0)
       wasabi (~> 3.2.0)
-    thread_safe (0.3.4)
-    tzinfo (1.2.2)
-      thread_safe (~> 0.1)
     wasabi (3.2.0)
       httpi (~> 2.0)
       nokogiri (>= 1.4.0, < 1.6)
@@ -42,5 +30,4 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  activesupport (>= 3.0.0)
   savon (>= 2.3.0)

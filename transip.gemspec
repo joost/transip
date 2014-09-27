@@ -17,7 +17,6 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency('savon', '>= 2.3.0')
-  spec.add_dependency('activesupport', '>= 3.0.0')
 
   spec.extra_rdoc_files = [
     "MIT-LICENSE",

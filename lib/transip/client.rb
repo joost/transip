@@ -52,8 +52,8 @@ module Transip
       }
       # if proxy is present, use it
       if @proxy != nil
-	      @savon_options[:proxy] = @proxy
-	  end
+        @savon_options[:proxy] = @proxy
+      end
       # By default we don't want to debug!
        self.turn_off_debugging!
     end
@@ -116,6 +116,13 @@ module Transip
       encoded_parameters
     end
 
+    def camelize(term)
+      string = term.split('_').map(&:capitalize).join
+      string[0] = string[0].downcase
+      string.gsub!('/', '::')
+      string
+    end
+
     # does all the techy stuff to calculate transip's sick authentication scheme:
     # a hash with all the request information is subsequently:
     # serialized like a www form
@@ -126,7 +133,7 @@ module Transip
     # URL encoded
     # I think the guys at transip were trying to use their entire crypto-toolbox!
     def signature(method, parameters, time, nonce)
-      formatted_method = method.to_s.camelize(:lower)
+      formatted_method = camelize(method.to_s)
       parameters ||= {}
       input = convert_array_to_hash(parameters.values)
       options = {
@@ -235,7 +242,7 @@ module Transip
     # throws ApiError
     # returns response object (can be TransipStruct or Array of TransipStruct)
     def request(action, options = nil)
-      formatted_action = action.to_s.camelize(:lower)
+      formatted_action = camelize(action.to_s)
       parameters = {
         # for some reason, the transip server wants the body root tag to be
         # the name of the action.
