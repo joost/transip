@@ -2,7 +2,6 @@ require 'rubygems'
 require 'bundler/setup'
 require 'securerandom'
 require 'savon'
-require 'curb'
 require 'active_support/inflector'
 require 'digest/sha2'
 require 'base64'
@@ -29,7 +28,6 @@ require File.expand_path '../transip/api_error', __FILE__
 #  transip.request(:register, Transip::Domain.new('example.com', nil, nil, [Transip::DnsEntry.new('test', 5.minutes, 'A', '74.125.77.147')]))
 #
 module Transip
-
   # Backwards compatibility with v3.x of the gem.
   # TODO: Remove
   def self.new(*args)
@@ -176,7 +174,6 @@ module Transip
   class Domain < TransipStruct.new(:name, :nameservers, :contacts, :dns_entries, :branding, :auth_code, :is_locked, :registration_date, :renewal_date)
   end
 
-
   # name - String
   # price - number
   # renewal_price - number
@@ -194,5 +191,4 @@ module Transip
 
   class VpsService < TransipStruct.new(:name, :description, :operating_system, :disk_size, :memory_size, :cpus, :status, :ip_address, :vnc_hostname, :vnc_port_number, :vnc_password, :is_blocked, :is_customer_locked)
   end
-
 end
