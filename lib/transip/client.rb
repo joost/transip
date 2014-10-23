@@ -86,6 +86,7 @@ module Transip
       output = URI.encode_www_form_component(input)
       output.gsub!('+', '%20')
       output.gsub!('%7E', '~')
+      output.gsub!('*', '%2A')
       output
     end
 
