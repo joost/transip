@@ -1,6 +1,6 @@
 = TransIP API
 
-Ruby gem to use the full TransIP (www.transip.nl) API (v5.0).
+Ruby gem to use the full TransIP (www.transip.nl) API (v5.9).
 Uses an updated version of savon and implements the new request signing method that the guys at TransIP have introduced into their API.
 
 The TransIP API makes use of public/private key encryption. You need to use the TransIP
