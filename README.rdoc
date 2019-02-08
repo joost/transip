@@ -94,4 +94,4 @@ Find out full methods and parameters by going throught the PHP sources of the Tr
 
 Please feel free to contribute and send me a pull request via Github!
 
-(C)opyright 2014 Joost Hietbrink / Richard Bronkhorst, released under the MIT license.
+(C)opyright 2018 Joost Hietbrink / Richard Bronkhorst, released under the MIT license.
